@@ -1,19 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using asp_net_microservice_template.Middleware;
+using asp_net_microservice_template.Models;
+using asp_net_microservice_template.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
-using Microsoft.EntityFrameworkCore;
-using Models;
-
+using Microsoft.Extensions.Options;
 
 namespace asp_net_microservice_template
 {
@@ -29,10 +22,12 @@ namespace asp_net_microservice_template
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
-            services.AddControllers();
-            services.AddDbContext<TodoContext>(opt =>
-                                               opt.UseInMemoryDatabase("TodoList"));
+            ServiceConfiguration.AddDAOs(services);
+            ServiceConfiguration.AddConfiguration(services, Configuration);
+            ServiceConfiguration.AddSingletons(services);
+            
+            services.AddControllers()
+                .AddNewtonsoftJson(options => options.UseMemberCasing());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,11 +36,14 @@ namespace asp_net_microservice_template
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                // app.UseSwagger();
-                // app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "asp_net_microservice_template v1"));
             }
 
-            app.UseHttpsRedirection();
+            if (env.IsProduction())
+            {
+                app.UseHttpsRedirection();
+            }
+
+            app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
             app.UseRouting();
 
