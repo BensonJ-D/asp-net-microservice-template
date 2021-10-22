@@ -12,6 +12,8 @@ namespace asp_net_microservice_template
 {
     public class Startup
     {
+        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -25,9 +27,19 @@ namespace asp_net_microservice_template
             ServiceConfiguration.AddDAOs(services);
             ServiceConfiguration.AddConfiguration(services, Configuration);
             ServiceConfiguration.AddSingletons(services);
-            
+
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                    builder =>
+                    {
+                        builder.WithOrigins("http://frontend.test",
+                            "http://localhost:3000");
+                    });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,16 +55,15 @@ namespace asp_net_microservice_template
                 app.UseHttpsRedirection();
             }
 
+            app.UseCors(MyAllowSpecificOrigins);
+
             app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
             app.UseRouting();
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }
